@@ -12,6 +12,9 @@ pub struct BlockValue {
     pub size_exponent: u8,
 }
 
+// 2^20 - 1
+const MAX_BLOCK_NUMBER: u32 = 1048575;
+
 impl BlockValue {
     pub fn new(
         num: usize,
@@ -28,6 +31,9 @@ impl BlockValue {
         }
         let num =
             u32::try_from(num).map_err(InvalidBlockValue::TypeBoundsError)?;
+        if num > MAX_BLOCK_NUMBER {
+            return Err(InvalidBlockValue::MaximumNumberExceeded(num));
+        }
         Ok(Self {
             num,
             more,
