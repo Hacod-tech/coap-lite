@@ -91,6 +91,7 @@ impl error::Error for IncompatibleOptionValueFormat {}
 pub enum InvalidBlockValue {
     SizeExponentEncodingError(usize),
     TypeBoundsError(TryFromIntError),
+    MaximumNumberExceeded(u32),
 }
 
 impl fmt::Display for InvalidBlockValue {
@@ -101,6 +102,9 @@ impl fmt::Display for InvalidBlockValue {
             }
             InvalidBlockValue::TypeBoundsError(err) => {
                 write!(f, "size provided is outside type bounds: {}", err)
+            }
+            InvalidBlockValue::MaximumNumberExceeded(size) => {
+                write!(f, "block number {} cannot be encoded", size)
             }
         }
     }
