@@ -2,12 +2,12 @@ use alloc::vec::Vec;
 use core::convert::TryFrom;
 
 use crate::error::{IncompatibleOptionValueFormat, InvalidBlockValue};
-use crate::option_value::{OptionValueType, OptionValueU16};
+use crate::option_value::{OptionValueType, OptionValueU32};
 
 /// The block option value.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct BlockValue {
-    pub num: u16,
+    pub num: u32,
     pub more: bool,
     pub size_exponent: u8,
 }
@@ -27,7 +27,7 @@ impl BlockValue {
             return Err(InvalidBlockValue::SizeExponentEncodingError(size));
         }
         let num =
-            u16::try_from(num).map_err(InvalidBlockValue::TypeBoundsError)?;
+            u32::try_from(num).map_err(InvalidBlockValue::TypeBoundsError)?;
         Ok(Self {
             num,
             more,
@@ -57,10 +57,10 @@ impl BlockValue {
 
 impl From<BlockValue> for Vec<u8> {
     fn from(block_value: BlockValue) -> Vec<u8> {
-        let scalar = block_value.num << 4
-            | u16::from(block_value.more) << 3
-            | u16::from(block_value.size_exponent & 0x7);
-        Vec::from(OptionValueU16(scalar))
+        let scalar = u32::from(block_value.num) << 4
+            | u32::from(block_value.more) << 3
+            | u32::from(block_value.size_exponent & 0x7);
+        Vec::from(OptionValueU32(scalar))
     }
 }
 
@@ -68,9 +68,9 @@ impl TryFrom<Vec<u8>> for BlockValue {
     type Error = IncompatibleOptionValueFormat;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        let scalar = OptionValueU16::try_from(value)?.0;
+        let scalar = OptionValueU32::try_from(value)?.0;
 
-        let num: u16 = scalar >> 4;
+        let num: u32 = scalar >> 4;
         let more = scalar >> 3 & 0x1 == 0x1;
         let size_exponent: u8 = (scalar & 0x7) as u8;
         Ok(Self {
@@ -118,5 +118,19 @@ mod tests {
                 size_exponent: 4
             }
         );
+    }
+
+    #[test]
+    fn encode_block_opt_4096() {
+        let opt = BlockValue::new(4096, false, 1024).unwrap();
+        let bytes = Vec::<u8>::from(opt);
+        assert_eq!(bytes, vec![0x01, 0x00, 0x06]);
+    }
+
+    #[test]
+    fn encode_block_opt_4095() {
+        let opt = BlockValue::new(4095, false, 1024).unwrap();
+        let bytes = Vec::<u8>::from(opt);
+        assert_eq!(bytes, vec![0xff, 0xf6]);
     }
 }

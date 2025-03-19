@@ -147,8 +147,9 @@ impl<Endpoint: Ord + Clone> BlockHandler<Endpoint> {
                 let cached_payload =
                     state.cached_request_payload.as_mut().unwrap();
 
-                let payload_offset =
-                    usize::from(request_block1.num) * request_block1.size();
+                let payload_offset = usize::try_from(request_block1.num)
+                    .unwrap()
+                    * request_block1.size();
                 extending_splice(
                     cached_payload,
                     payload_offset..payload_offset + request_block1.size(),
@@ -246,7 +247,7 @@ impl<Endpoint: Ord + Clone> BlockHandler<Endpoint> {
         let request_block_size = request_block2.size();
         let mut chunks = cached_payload
             .chunks(request_block_size)
-            .skip(usize::from(request_block2.num));
+            .skip(usize::try_from(request_block2.num).unwrap());
 
         let cached_payload_chunk = chunks.next().ok_or_else(|| {
             HandlingError::bad_request(format!(
@@ -367,8 +368,9 @@ impl<Endpoint: Ord + Clone> BlockHandler<Endpoint> {
                 let negotiated_block_size =
                     min(request_block.size(), max_block_size);
 
-                let reply_start_offset =
-                    usize::from(request_block.num) * request_block.size();
+                let reply_start_offset = usize::try_from(request_block.num)
+                    .unwrap()
+                    * request_block.size();
                 let reply_end_offset =
                     reply_start_offset + negotiated_block_size;
 
@@ -535,7 +537,7 @@ mod tests {
             }
 
             let sent_block = BlockValue::new(
-                usize::from(block_num + 1),
+                usize::try_from(block_num + 1).unwrap(),
                 false, /* more */
                 block_size,
             )
